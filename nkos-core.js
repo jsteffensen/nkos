@@ -1,1 +1,3 @@
-var somevar = 'somevalue';
+$(function() {
+    console.log( "ready!" );
+});
