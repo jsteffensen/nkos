@@ -1,4 +1,4 @@
-var height, width, centerX, centerY, viewBoxAttrValue, svg, link, predicate, node, simulation;
+var height, width, centerX, centerY, viewBoxAttrValue, svg, links, predicates, nodes, simulation, dragging;
 
 $(function() {
   init();
@@ -46,9 +46,9 @@ function initD3ForceLayout() {
       .force('link', d3.forceLink().id(function(d) { return d.id; }).distance(function(d) {return 5;}))
       .force('x', d3.forceX(width/2))
       .force('y', d3.forceY(height/2))
-      .force('charge', d3.forceManyBody().strength(-100))
+      .force('charge', d3.forceManyBody().strength(-300))
       .force('charge', d3.forceManyBody().theta(0))
-      .force('collision', d3.forceCollide().radius(60));
+      .force('collision', d3.forceCollide().radius(100));
 
     resolve();
 
@@ -59,7 +59,14 @@ function updateForceGraph() {
   return new Promise(function(resolve, reject) {
 
     links = links.data(graph.links);
-    links.exit().remove();
+    links.exit().transition()
+      .attr("stroke-opacity", 0)
+      .attrTween("x1", function(d) { return function() { return d.source.x; }; })
+      .attrTween("x2", function(d) { return function() { return d.target.x; }; })
+      .attrTween("y1", function(d) { return function() { return d.source.y; }; })
+      .attrTween("y2", function(d) { return function() { return d.target.y; }; })
+      .remove();
+
     links = links.enter().append('line')
     .attr('class', 'line')
     .attr('id', function(d) {
@@ -76,17 +83,19 @@ function updateForceGraph() {
     predicates = predicates.data(graph.links);
     predicates.exit().remove();
     predicates = predicates.enter().append('text')
+    .attr('class', 'predicate')
     .text(function(d) {
        return d.title;
      })
-    .attr('class', function(d) {
-      return 'predicate';
-    })
+    .attr('class', 'predicate')
     .style('font-family', 'monospace')
+    .style('fill', 'blue')
     .merge(predicates);
 
     nodes = nodes.data(graph.nodes);
-    nodes.exit().remove();
+    nodes.exit().transition()
+      .attr('r', 0)
+      .remove();
 
     enter = nodes.enter().append('g')
       .attr('class', function(d) { 
@@ -136,12 +145,27 @@ function updateForceGraph() {
 
 function ticked() {
 
+  // cool down quicker
+  if(!dragging) {
+    simulation.tick(10);
+  }
+
+  nodes.attr('transform', function(d) {
+      if(d.id == selectedNode.id) {
+        d.x = width/2;
+        d.y = height/2; 
+      }
+      return 'translate(' + d.x + ',' + d.y + ')'; 
+    });
+
   links.attr('x1', function(d) { return d.source.x; })
       .attr('y1', function(d) { return d.source.y; })
       .attr('x2', function(d) { return d.target.x; })
       .attr('y2', function(d) { return d.target.y; });
 
-  nodes.attr('transform', function(d) { return 'translate(' + d.x + ',' + d.y + ')'; });
+  predicates.attr('x', function(d) { return ((d.source.x + d.target.x)/2) + 10; })
+      .attr('y', function(d) { return (d.source.y + d.target.y)/2; });
+
 }
 
 
@@ -156,16 +180,23 @@ function nodeColor(type) {
 
 ////////// events //////////////////////////////////////////////////////////////////
 
-function dragstarted(d) {
-
+function dragstarted(event, d) {
+  dragging = true;
+  if (!event.active) simulation.alphaTarget(0.3).restart();
+  d.fx = d.x;
+  d.fy = d.y;
 }
 
-function dragged(d) {
-
+function dragged(event, d) {
+  d.fx = event.x;
+  d.fy = event.y;
 }
 
-function dragended(d) {
-
+function dragended(event, d) {
+  dragging = false;
+  if (!event.active) simulation.alphaTarget(0);
+  d.fx = null;
+  d.fy = null;
 }
 
 function nodeMouseover(d) {
@@ -180,8 +211,8 @@ function linkMouseout(d) {
   d3.select(this).attr('marker-end', 'url(#arrowhead)');
 }
 
-function nodeClick(d) {
-
+function nodeClick(event, d) {
+  console.log(d);
 }
 
 function linkClick(d) {
