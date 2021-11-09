@@ -1,1 +1,1 @@
-# Networked Knowledge Organization System
+# Networked Knowledge Organization System (NKOS)
