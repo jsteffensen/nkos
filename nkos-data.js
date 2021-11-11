@@ -1,11 +1,5 @@
 var userId, selectedNode, graph;
 
-function testClick() {
-  insertTestData2().then(function() {
-    updateForceGraph();
-  });
-}
-
 function clearData() {
   clearSelected();
   clearGraph();
@@ -14,6 +8,7 @@ function clearData() {
 function clearSelected() {
   selectedNode = {};
   selectedNode.id = 0;
+  selectedNode.documents = [];
 }
 
 function clearGraph() {
@@ -27,13 +22,16 @@ function insertTestData() {
   return new Promise(function(resolve, reject) {
     clearData();
 
-    selectedNode = {'title':'my node1', 'id':'1', 'class':'someType'};
+    selectedNode = {'title':'my node1', 'id':'1', 'class':'someType', 'documents':[]};
+    selectedNode.documents.push({'id':'1', 'title':'my document 1', 'description':'Some placeholder in a paragraph below the heading and date', 'date':'10-Nov-2021'});
+    selectedNode.documents.push({'id':'2', 'title':'my document 2', 'description':'Some placeholder in a paragraph below the heading and date', 'date':'08-Nov-2021'});
+
     graph.nodes.push(selectedNode);
     graph.nodes.push({'title':'my node2', 'id':'2', 'class':'someOtherType'});
     graph.nodes.push({'title':'my node3', 'id':'3', 'class':'someThirdType'});
 
-    graph.links.push({'source':'1', 'target':'2', 'title':'hasA'});
-    graph.links.push({'source':'3', 'target':'1', 'title':'uses'});
+    graph.links.push({'id': '1', 'source':'1', 'target':'2', 'title':'hasA'});
+    graph.links.push({'id': '2', 'source':'3', 'target':'1', 'title':'uses'});
 
     resolve();
   });

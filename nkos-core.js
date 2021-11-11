@@ -1,15 +1,85 @@
 var height, width, centerX, centerY, viewBoxAttrValue, svg, links, predicates, nodes, simulation, dragging;
 
+function testClick() {
+  overlayOn();
+
+  setTimeout(function(){
+    overlayOff();
+  }, 1000);
+}
+
+function overlayOn() {
+  console.log('on');
+  document.getElementById("overlay").style.display = "block";
+}
+
+function overlayOff() {
+  console.log('off');
+  document.getElementById("overlay").style.display = "none";
+}
+
 $(function() {
   init();
 });
 
 function init() {
+
+  //$('#sharepoint-tunnel').attr('src', baseURL);
+
+  $('#search-input').keyup(function(event) {
+    if ( event.which == 13 ) {
+      event.preventDefault();
+      searchVertices();
+    }
+  });
+
   initD3ForceLayout().then(function() {
     return insertTestData();
-  }, function(error) {console.log(e)}).then(function() {
+  }, function(error) {console.log(error)}).then(function() {
     return updateForceGraph();
-  }, function(error) {console.log(e)});
+  }, function(error) {console.log(error)}).then(function() {
+    appendDocuments();
+  }, function(error) {console.log(error)});
+}
+
+function searchVertices() {
+
+  $('#search-list').empty();
+
+  $('#modalSearch').modal('show');
+
+  term = $('#search-input').val();
+
+  getVerticesSearchResults(term).then(function(data) {
+
+    uniqueResults = [];
+
+    data.d.results.forEach((vertex) => {
+
+      isDuplicateGuid = _.some(uniqueResults, function(o) {
+        return o.Guid === vertex.Guid;
+      });
+
+      if(!isDuplicateGuid) {
+        uniqueResults.push(vertex);
+      }
+    });
+
+    uniqueResults.forEach((uniqueVertex)=>{
+      $('#search-list').append(getSearchHTML(uniqueVertex));
+    });
+    
+    if(data.d.results.length == 0) {
+      $('#search-list').append('<p>No results.</p>');
+      setTimeout(function() {
+        $('#search-list').empty();
+        $('#modalSearch').modal('hide');
+      }, 1000);
+    }
+  });
+
+  $('#search-input').val('');
+  $('#search-input').blur();
 }
 
 function initD3ForceLayout() {
@@ -55,6 +125,37 @@ function initD3ForceLayout() {
   });
 }
 
+function appendDocuments() {
+  selectedNode.documents.forEach(function(doc) {
+    element = documentHTML(doc);
+    element.hide();
+    $('#document-list').append(element);
+    element.slideDown( 'slow' );
+  });
+
+}
+
+
+function documentHTML(document) {
+
+  elementA = $('<a></a>', {'href': '#', 'class': 'list-group-item list-group-item-action py-3 lh-tight'});
+  elementDiv = $('<div></div>', {'class': 'd-flex w-100 align-items-center justify-content-between'});
+  elementDivTitle = $('<strong></strong>', {'class': 'mb-1'});
+  elementDivTitle.text(document.title);
+  elementDivDate = $('<small></small>');
+  elementDivDate.text(document.date);
+  elementDivDescription = $('<div></div>', {'class': 'col-10 mb-1 small'});
+  elementDivDescription.text(document.description);
+
+  elementDiv.append(elementDivTitle);
+  elementDiv.append(elementDivDate);
+  elementA.append(elementDiv);
+  elementA.append(elementDivDescription);
+
+  return elementA;
+
+}
+
 function updateForceGraph() {
   return new Promise(function(resolve, reject) {
 
@@ -72,6 +173,9 @@ function updateForceGraph() {
     .attr('id', function(d) {
       return d.id;
     })
+    .attr('title', function(d) {
+      return d.title;
+    })
     .attr('stroke', '#000')
     .attr('stroke-width', '1')
     .attr('marker-end', 'url(#arrowhead)')
@@ -87,7 +191,9 @@ function updateForceGraph() {
     .text(function(d) {
        return d.title;
      })
-    .attr('class', 'predicate')
+    .attr('id', function(d) {
+      return d.id;
+    })
     .style('font-family', 'monospace')
     .style('fill', 'blue')
     .merge(predicates);
@@ -203,18 +309,21 @@ function nodeMouseover(d) {
 
 }
 
-function linkMouseover(d) {
-  d3.select(this).attr('marker-end', '');
+function linkMouseover(event, d) {
+  d3.select(this).attr('marker-end', '').attr('stroke', 'green').attr('stroke-width', '12');
+  console.log(d.title);
 }
 
-function linkMouseout(d) {
-  d3.select(this).attr('marker-end', 'url(#arrowhead)');
+function linkMouseout(event, d) {
+  d3.select(this).attr('marker-end', 'url(#arrowhead)').attr('stroke', 'black').attr('stroke-width', '1');
 }
 
 function nodeClick(event, d) {
-  console.log(d);
+  if(d.id != selectedNode.id) {
+    selectedNode = d;
+  }
 }
 
-function linkClick(d) {
-
+function linkClick(event, d) {
+  console.log(d);
 }
