@@ -34,3 +34,20 @@ footer {
   z-index: 2; /* Specify a stack order in case you're using a different order for other elements */
   cursor: pointer; /* Add a pointer on hover */
 }
+
+.shadow {
+  -webkit-filter: drop-shadow( 3px 3px 2px rgba(0, 0, 0, .7));
+  filter: drop-shadow( 3px 3px 2px rgba(0, 0, 0, .4));
+}
+
+.document-list-item {
+  overflow: hidden;
+}
+
+.orphan {
+  background-color: #ffeaa7;
+}
+
+.orphan:hover {
+  background-color: #f1c40f;
+}
